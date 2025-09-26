@@ -3,3 +3,4 @@ configargparse
 numpy
 imageio
 opencv-python
+tqdm

@@ -31,3 +31,27 @@ def get_rays_np(H, W, K, c2w):
     rays_o = np.broadcast_to(c2w[:3,-1], np.shape(rays_d))
     return rays_o, rays_d
 
+def uniform_sample_rays(rays_o, rays_d, N_samples, near=0, far=1.):
+    """uniform sample rays
+
+    Args:
+        rays_o (torch.Tensor): rays origin, [N_rays, 3]
+        rays_d (torch.Tensor): rays directory, [N_rays, 3]
+        near (float): near plane Z value
+        far (float): far plane Z value
+        N_samples (int): number of position samples
+
+    Returns:
+       torch.Tensor: rays query, [N_rays, N_samples, 3]
+       torch.Tensor: t values, [N_rays, N_samples]
+    """
+    device = rays_o.device
+    N_rays = rays_o.shape[0]
+    eta = torch.rand(size=[N_rays, N_samples])                                  # [N_rays, N_samples]
+    bins = torch.linspace(near, far, steps=N_samples+1)                         # [N_samples+1]
+    lower_bins = bins[None,:-1].expand(size=[N_rays, N_samples])                # [N_samples] -> [N_rays, N_samples]
+    upper_bins = bins[None,1:].expand(size=[N_rays, N_samples])                 # [N_samples] -> [N_rays, N_samples]
+    t_vals = (lower_bins * (1 - eta) + upper_bins * eta).to(device)             # [N_rays, N_samples]
+    rays_q = rays_o[:,None,:] + rays_d[:,None,:] * t_vals[...,None]             # [N_rays, N_samples, 3] = [N_rays, 1, 3] +  [N_rays, 1, 3] * [N_rays, N_samples, 1]
+    return rays_q, t_vals
+
