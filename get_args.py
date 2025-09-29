@@ -5,6 +5,7 @@ def str2bool(x):
 
 def get_args():
     parser = configargparse.ArgumentParser()
+    
     # basic
     parser.add_argument('--config', is_config_file=True, required=True, 
                         help='config file path')
@@ -50,8 +51,7 @@ def get_args():
                         help='fine network checkpoint file')
     parser.add_argument("--fine_net_checkpoint", type=str, required=False,  
                         help='fine network checkpoint file')
-    parser.add_argument("--lrate", type=float, default=5e-4, 
-                        help='learning rate')
+
     parser.add_argument("--betas", type=str, default='(0.9, 0.999)', 
                         help='betas for optimizer')
     
@@ -76,6 +76,10 @@ def get_args():
     # test
     parser.add_argument("--test", action='store_true', 
                         help='render the test set instead of render_poses path')
+    parser.add_argument("--test_step", type=int, default=500, 
+                        help='frequency of test')
+    parser.add_argument("--test_rand_n", type=int, default=1, 
+                        help='randomly choose n rays for test')
     
     # train
     parser.add_argument("--N_rand", type=int, default=32*32*4, 
@@ -94,7 +98,7 @@ def get_args():
                         help='number of additional fine samples per ray')
     parser.add_argument("--chunk", type=int, default=1024*64, 
                         help='number of pts sent through network in parallel, decrease if running out of memory')
-    parser.add_argument("--lr", type=float, default=5e-4, 
+    parser.add_argument("--lrate", type=float, default=5e-4, 
                         help='learning rate')
     parser.add_argument("--lr_decay", type=int, default=250, 
                         help='exponential learning rate decay (in 1000 steps)')
@@ -104,4 +108,11 @@ def get_args():
                         help='checkpoints save step')
     parser.add_argument("--save_dir", type=str, default='./checkpoints', 
                         help='checkpoints save directory')
+    
+    # render
+    parser.add_argument("--i_video",   type=int, default=50000, 
+                        help='frequency of render_poses video saving')
+    parser.add_argument("--render", action='store_true', 
+                        help='do not optimize, reload weights and render out render_poses path')
+    
     return parser

@@ -1,7 +1,6 @@
 import torch
 from tools import *
 from get_args import *
-from render import *
 from loss import *
 from model import NeRF
 import ast
@@ -12,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from data_process.blender import load_blender_data
 from data_process.llff import load_llff_data
 import os
+import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 np.random.seed(0)
@@ -83,8 +83,10 @@ def train():
         
     if args.test:
         render_poses = np.array(poses[i_test])
-    render_poses = torch.Tensor(render_poses).to(device)
-    
+        render_poses = torch.Tensor(render_poses).to(device)
+    else:
+        render_poses = None
+        
     # 创建保存路径
     basedir = args.result_dir
     expname = args.expname
@@ -104,7 +106,7 @@ def train():
     vars_to_train = []
     coarse_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
-    vars_to_train.append(coarse_nerf)
+    vars_to_train = list(coarse_nerf.parameters())
     if args.coarse_net_use_checkpoint:
         logging.info(f'Load coarse net checkpoint ({args.coarse_net_checkpoint}).')
         coarse_nerf_params = torch.load(args.coarse_net_checkpoint, map_location=device)
@@ -112,14 +114,17 @@ def train():
         
     fine_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
-    vars_to_train.append(fine_nerf)
+    vars_to_train += list(fine_nerf.parameters())
     if args.fine_net_use_checkpoint:
-        logging.info(f'Load coarse net checkpoint ({args.fine_net_checkpoint}).')
+        logging.info(f'Load fine net checkpoint ({args.fine_net_checkpoint}).')
         fine_nerf_params = torch.load(args.fine_net_checkpoint, map_location=device)
         fine_nerf.load_state_dict(fine_nerf_params)
     
     # 定义优化器AdamW
     optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=args.betas)
+    
+    if args.render:
+        pass
     
     loss_history = []
     psnr_history = []
@@ -142,17 +147,16 @@ def train():
 
         print('done')
         i_batch = 0
+        i_test_step = 0
         
     if using_batching:
         images = torch.Tensor(images).to(device)
     poses = torch.Tensor(poses).to(device)
     if using_batching:
         rays_rgb = torch.Tensor(rays_rgb).to(device)
-
     for i in trange(args.begin_iter, args.N_iter):
         time0 = time.time()
         if using_batching:
-        # Random over all images
             batch = rays_rgb[i_batch:i_batch+N_rand] # [B, 2+1, 3*?]
             batch = torch.transpose(batch, 0, 1)
             batch_rays, target_s = batch[:2], batch[2]
@@ -164,7 +168,35 @@ def train():
                 rays_rgb = rays_rgb[rand_idx]
                 i_batch = 0
         else:
-            pass
+            img_i = np.random.choice(i_train)
+            target = images[img_i]
+            target = torch.Tensor(target).to(device)
+            pose = poses[img_i, :3,:4]
+
+            if N_rand is not None:
+                rays_o, rays_d = get_rays(H, W, K, torch.Tensor(pose))  # (H, W, 3), (H, W, 3)
+
+                if i < args.precrop_iters:
+                    dH = int(H//2 * args.precrop_frac)
+                    dW = int(W//2 * args.precrop_frac)
+                    coords = torch.stack(
+                        torch.meshgrid(
+                            torch.linspace(H//2 - dH, H//2 + dH - 1, 2*dH), 
+                            torch.linspace(W//2 - dW, W//2 + dW - 1, 2*dW)
+                        ), -1)
+                    if i == 0:
+                        print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {args.precrop_iters}")                
+                else:
+                    coords = torch.stack(torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W)), -1)  # (H, W, 2)
+
+                coords = torch.reshape(coords, [-1,2])  # (H * W, 2)
+                select_inds = np.random.choice(coords.shape[0], size=[N_rand], replace=False)  # (N_rand,)
+                select_coords = coords[select_inds].long()  # (N_rand, 2)
+                rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
+                rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
+                batch_rays = torch.stack([rays_o, rays_d], 0)
+                target_s = target[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
+
         rays_o, rays_d = batch_rays
         view_dirs = rays_d
         view_dirs = view_dirs / torch.norm(view_dirs, dim=-1, keepdim=True)
@@ -180,12 +212,12 @@ def train():
         all_rgb, all_sigma = [], []
         for it in range(0, N_s, args.chunk):
             begin = it
-            end = it + arg.chunk
+            end = it + args.chunk
             end = end if end < N_s else N_s
             rgb, sigma = coarse_nerf(rays_query_flat[begin:end], view_dirs_flat[begin:end])
             all_rgb.append(rgb)
             all_sigma.append(sigma)
-        c_rgb = torch.cat(all_rgb, 0).reshape(batch_ray_size, batch_samples_size)
+        c_rgb = torch.cat(all_rgb, 0).reshape(batch_ray_size, batch_samples_size, 3)
         c_sigma = torch.cat(all_sigma, 0).reshape(batch_ray_size, batch_samples_size)
         c_rgb_map, weights = integrate(c_rgb, c_sigma, rays_d, t_vals)
         c_loss = get_mse_loss(c_rgb_map, target_s)  
@@ -203,12 +235,12 @@ def train():
         all_rgb, all_sigma = [], []
         for it in range(0, N_s, args.chunk):
             begin = it
-            end = it + arg.chunk
+            end = it + args.chunk
             end = end if end < N_s else N_s
             rgb, sigma = fine_nerf(rays_query_flat[begin:end], view_dirs_flat[begin:end])
             all_rgb.append(rgb)
             all_sigma.append(sigma)
-        f_rgb = torch.cat(all_rgb, 0).reshape(batch_ray_size, batch_samples_size)
+        f_rgb = torch.cat(all_rgb, 0).reshape(batch_ray_size, batch_samples_size, 3)
         f_sigma = torch.cat(all_sigma, 0).reshape(batch_ray_size, batch_samples_size)
         f_rgb_map, weights = integrate(f_rgb, f_sigma, rays_d, imp_t_vals)
         f_loss = get_mse_loss(f_rgb_map, target_s)  
@@ -222,19 +254,24 @@ def train():
         
         loss_history.append(f_loss.item())
         psnr_history.append(f_psnr.item())
-        train_loss = sum(loss_history[-1000:]) / 1000
-        train_psnr = sum(psnr_history[-1000:]) / 1000
+        n = min(len(loss_history), 1000)
+        train_loss = sum(loss_history[-n:]) / n
+        train_psnr = sum(psnr_history[-n:]) / n
         
-        if (i + 1) % log_step:
+        if args.log and (i + 1) % log_step == 0:
             writer.add_scalar("Loss/train", train_loss, i + 1)
-            writer.add_scalar("PSRN/train", train_psnr, i + 1)
+            writer.add_scalar("PSNR/train", train_psnr, i + 1)
             
         if (i + 1) % args.save_step == 0:
             save_model_parameters(save_base_dir=args.save_dir, coarse_nerf=coarse_nerf, fine_nerf=fine_nerf, iteration=i+1)
 
+        if (i + 1) % args.i_video:
+            pass
+        
+        # 调整学习率
         decay_rate = 0.1
         decay_steps = args.lr_decay * 1000
-        new_lrate = args.lr * (decay_rate ** (i / decay_steps))
+        new_lrate = args.lrate * (decay_rate ** (i / decay_steps))
         for param_group in optimizer.param_groups:
             param_group['lr'] = new_lrate
             
@@ -243,4 +280,5 @@ def train():
         if i % args.i_print == 0:
             tqdm.write(f"[TRAIN] Iter: {i} Loss: {loss.item()}  PSNR: {f_psnr.item()}")
         
-    writer.close()
+    if args.log:
+        writer.close()
