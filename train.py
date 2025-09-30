@@ -2,6 +2,7 @@ import torch
 from tools import *
 from get_args import *
 from loss import *
+from render import render
 from model import NeRF
 import ast
 from tqdm import trange, tqdm
@@ -123,8 +124,11 @@ def train():
     # 定义优化器AdamW
     optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=args.betas)
     
-    if args.render:
-        pass
+    if args.render_video:
+        save_dir_video = os.path.join(args.save_dir_test, "render_only")
+        render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
+           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples)
+        return
     
     loss_history = []
     psnr_history = []
@@ -147,7 +151,6 @@ def train():
 
         print('done')
         i_batch = 0
-        i_test_step = 0
         
     if using_batching:
         images = torch.Tensor(images).to(device)
@@ -265,8 +268,10 @@ def train():
         if (i + 1) % args.save_step == 0:
             save_model_parameters(save_base_dir=args.save_dir, coarse_nerf=coarse_nerf, fine_nerf=fine_nerf, iteration=i+1)
 
-        if (i + 1) % args.i_video:
-            pass
+        if (i + 1) % args.i_video == 0:
+            save_dir_video = os.path.join(args.save_dir_test, f"video_{i}_epoch")
+            render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
+           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples)
         
         # 调整学习率
         decay_rate = 0.1

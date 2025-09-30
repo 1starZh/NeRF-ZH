@@ -112,7 +112,11 @@ def get_args():
     # render
     parser.add_argument("--i_video",   type=int, default=50000, 
                         help='frequency of render_poses video saving')
-    parser.add_argument("--render", action='store_true', 
+    parser.add_argument("--render_video", action='store_true', 
                         help='do not optimize, reload weights and render out render_poses path')
-    
+    parser.add_argument("--save_dir_test", type=str, default='./render_result', 
+                        help='video save directory')
+    parser.add_argument("--render_factor", type=int, default=8, 
+                        help='downsample factor for LLFF images')    
+
     return parser
