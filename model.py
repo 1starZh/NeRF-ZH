@@ -2,9 +2,25 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+class PositionEncoder():
+    def __init__(self, L):
+        super().__init__()
+        self.L = L
+
+    def __call__(self, input):
+        output = []
+        for i in range(0, self.L):
+            s = torch.sin((2.**i) * input)
+            c = torch.cos((2.**i) * input)
+            output.append(s)
+            output.append(c)
+        return torch.cat(output, dim=-1)
+
 class NeRF(nn.Module):
     def __init__(self, D=8, W=256, input_ch=3, input_ch_views=3, in_L=10, in_v_L=4, skips=[4]):
         super(NeRF, self).__init__()
+        self.pe_x = PositionEncoder(in_L)
+        self.pe_d = PositionEncoder(in_v_L)
         self.D = D
         self.W = W
         self.input_ch_net = input_ch * (in_L * 2 + 1)
@@ -24,8 +40,11 @@ class NeRF(nn.Module):
         self.view = nn.Linear(self.input_ch_views_net + W, W // 2)
         self.rgb = nn.Linear(W // 2, 3)
         
-    def forward(self, x):
-        input_x, input_view = torch.split(x, [self.input_ch_net, self.input_ch_views_net], dim=-1)
+    def forward(self, rays_samples, view_dirs):
+        
+        input_x = torch.cat([rays_samples ,self.pe_x(rays_samples)], dim=-1)  
+        input_view = torch.cat([view_dirs, self.pe_d(view_dirs)], dim=-1)
+        
         h = input_x
         for i in range(self.D):
             h = self.nerf_net[i](h)

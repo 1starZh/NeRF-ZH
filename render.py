@@ -7,7 +7,7 @@ import imageio
 to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
 def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
-           chunk, save_dir, render_factor, Nc_samples, Nf_samples, no_grad):
+           chunk, save_dir, render_factor, Nc_samples, Nf_samples):
     # 创建保存路径
     os.makedirs(os.path.join(save_dir), exist_ok=True)
     

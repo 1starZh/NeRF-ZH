@@ -4,3 +4,4 @@ numpy
 imageio
 opencv-python
 tqdm
+tensorboard

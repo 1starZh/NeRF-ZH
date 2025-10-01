@@ -21,7 +21,7 @@ def get_args():
                         help='loss and metrics log directory')
     parser.add_argument("--log_step", type=int, default=100, 
                         help='frequency of tensorboard logging')
-    parser.add_argument("result_dir", type=str, default="./result/",
+    parser.add_argument("--result_dir", type=str, default="./result/",
                         help='where to store ckpts and logs')
     parser.add_argument("--expname", type=str, 
                         help='experiment name')
@@ -102,6 +102,10 @@ def get_args():
                         help='learning rate')
     parser.add_argument("--lr_decay", type=int, default=250, 
                         help='exponential learning rate decay (in 1000 steps)')
+    parser.add_argument("--precrop_iters", type=int, default=0,
+                        help='number of steps to train on central crops')
+    parser.add_argument("--precrop_frac", type=float,
+                        default=.5, help='fraction of img taken for central crops') 
     
     # saving options
     parser.add_argument("--save_step", type=int, default=1000, 

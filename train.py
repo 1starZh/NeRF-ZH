@@ -122,7 +122,8 @@ def train():
         fine_nerf.load_state_dict(fine_nerf_params)
     
     # 定义优化器AdamW
-    optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=args.betas)
+    betas = ast.literal_eval(args.betas)
+    optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=betas)
     
     if args.render_video:
         save_dir_video = os.path.join(args.save_dir_test, "render_only")
