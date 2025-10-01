@@ -63,5 +63,5 @@ class NeRF(nn.Module):
         rgb = self.rgb(h)
         rgb = torch.sigmoid(rgb)
         
-        output = torch.cat([rgb, sigma], -1)
-        return output
+        # output = torch.cat([rgb, sigma], -1)
+        return rgb, sigma

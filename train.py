@@ -288,3 +288,12 @@ def train():
         
     if args.log:
         writer.close()
+        
+if __name__=='__main__':
+    # 使用新的推荐方法替换被弃用的set_default_tensor_type
+    torch.set_default_dtype(torch.float32)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        torch.set_default_device('cuda')
+
+    train()

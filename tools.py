@@ -117,8 +117,9 @@ def integrate(rgb, sigma, rays_d, t_vals):
         torch.Tensor: rgb_map, [N_rays, 3]
         torch.Tensor: weights, [N_rays, N_samples]
     """
-    device = t_vals.device
     dists = t_vals[...,1:] - t_vals[...,:-1]                                                                            # [N_rays, N_samples-1]
+    # 从输入参数中获取device信息
+    device = rgb.device
     dists = torch.cat([dists, torch.tensor([1e10], device=device).expand(dists[...,:1].shape)], -1)                     # [N_rays, N_samples]
     dists = dists * torch.norm(rays_d[...,None,:], dim=-1)                                                              # [N_rays, N_samples] = [N_rays, N_samples] * [N_rays, 1]
     alpha = 1 - torch.exp(-sigma * dists)                                                                               # [N_rays, N_samples]

@@ -1,0 +1,41 @@
+# Blender数据集配置文件
+
+# 基本参数
+base_dir = ./
+dataset_type = blender
+
+# 日志设置
+log = true
+log_dir = ./log/blender_exp
+result_dir = ./result/
+expname = blender_lego
+
+datadir = ./data/lego
+half_res = true
+white_bkgd = true
+
+# 模型参数
+netdepth = 8
+netwidth = 256
+multires = 10
+multires_views = 4
+skips = 4
+
+# 训练参数
+N_rand = 1024
+N_iter = 200000
+Nc_samples = 64
+Nf_samples = 128
+chunk = 65536
+lrate = 5e-4
+lr_decay = 250
+betas = (0.9, 0.999)
+precrop_iters = 50000
+precrop_frac = 0.5
+
+# 保存和渲染参数
+save_step = 10000
+save_dir = ./checkpoints_lego
+render_factor = 0
+i_video = 50000
+save_dir_test = ./render_result
