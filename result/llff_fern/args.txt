@@ -1,4 +1,4 @@
-N_iter = 100000
+N_iter = 200000
 N_rand = 1024
 Nc_samples = 64
 Nf_samples = 128
@@ -46,5 +46,5 @@ test = False
 test_rand_n = 1
 test_step = 500
 testskip = 8
-using_batching = False
+using_batching = True
 white_bkgd = False

@@ -23,7 +23,7 @@ skips = 4
 
 # 训练参数
 N_rand = 1024
-N_iter = 100000
+N_iter = 200000
 Nc_samples = 64
 Nf_samples = 128
 chunk = 65536
@@ -32,6 +32,7 @@ lr_decay = 250
 betas = (0.9, 0.999)
 precrop_iters = 50000
 precrop_frac = 0.5
+using_batching = true
 
 # 保存和渲染参数
 save_step = 10000

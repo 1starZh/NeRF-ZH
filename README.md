@@ -1,6 +1,8 @@
-# NeRF中文实现
+# NeRF实现
 
-这是Neural Radiance Fields (NeRF) 的中文实现版本，基于原始论文 [NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis](https://arxiv.org/abs/2003.08934)。
+这是Neural Radiance Fields (NeRF) 的中文简单实现版本，在阅读nerf-pytorch代码的过程中，发现其对功能的处理极尽完善，
+但是由于代码中嵌套过多，使得代码的可读性较差以及修改起来有比较大的困难，再与另一篇simple-nerf的实现对比之后，我打算将两者
+的实现结合起来，实现一个既拥有高可读性，便于修改，又拥有比较完善的功能的nerf代码仓库。
 
 ## 项目结构
 
@@ -23,14 +25,6 @@ nerf-zh/
 ├── get_args.py            # 命令行参数解析
 └── requirements.txt       # 依赖项列表
 ```
-
-## 项目特点
-
-- 实现了完整的NeRF模型，包含coarse和fine两个网络
-- 支持LLFF和Blender两种数据集格式
-- 使用位置编码增强模型表达能力
-- 基于光线追踪的渲染方法
-- 支持TensorBoard可视化训练过程
 
 ## 环境配置
 
@@ -109,3 +103,5 @@ python train.py --config configs/fern.txt --render_video
 
 - [NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis](https://arxiv.org/abs/2003.08934)
 - [官方NeRF实现](https://github.com/bmild/nerf)
+- [nerf-pytorch实现](https://github.com/yenchenlin/nerf-pytorch)
+- [simple-nerf实现](https://github.com/yenchenlin/nerf-pytorch)
