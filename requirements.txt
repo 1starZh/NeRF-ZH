@@ -2,6 +2,8 @@ torch
 configargparse
 numpy
 imageio
+ast
 opencv-python
 tqdm
 tensorboard
+imageio[ffmpeg]

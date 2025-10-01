@@ -97,12 +97,18 @@ def get_psnr(mse):
     """
     return -10. * torch.log(mse) / torch.log(torch.Tensor([10.]).to(mse.device))
 
-def save_model_parameters(save_base_dir, coarse_nerf, fine_nerf, iteration):
+def save_model_parameters(save_base_dir, coarse_nerf, fine_nerf, iteration, optimizer=None):
     save_dir = os.path.join(save_base_dir, f'iter_{iteration}')
     os.makedirs(save_dir, exist_ok=True)
     torch.save(coarse_nerf.state_dict(), os.path.join(save_dir, 'coarse_nerf.pt'))
     torch.save(fine_nerf.state_dict(), os.path.join(save_dir, 'fine_nerf.pt'))
-    logging.info(f"Saved model parameters at iteration {iteration}.")
+    
+    # 保存优化器状态（如果提供了优化器）
+    if optimizer is not None:
+        torch.save(optimizer.state_dict(), os.path.join(save_dir, 'optimizer.pt'))
+        logging.info(f"Saved model parameters and optimizer state at iteration {iteration}.")
+    else:
+        logging.info(f"Saved model parameters at iteration {iteration}.")
     
 def integrate(rgb, sigma, rays_d, t_vals):
     """integrate rgb, alpha, rays_d and t_vals to rgb_map
@@ -117,9 +123,8 @@ def integrate(rgb, sigma, rays_d, t_vals):
         torch.Tensor: rgb_map, [N_rays, 3]
         torch.Tensor: weights, [N_rays, N_samples]
     """
+    device = t_vals.device
     dists = t_vals[...,1:] - t_vals[...,:-1]                                                                            # [N_rays, N_samples-1]
-    # 从输入参数中获取device信息
-    device = rgb.device
     dists = torch.cat([dists, torch.tensor([1e10], device=device).expand(dists[...,:1].shape)], -1)                     # [N_rays, N_samples]
     dists = dists * torch.norm(rays_d[...,None,:], dim=-1)                                                              # [N_rays, N_samples] = [N_rays, N_samples] * [N_rays, 1]
     alpha = 1 - torch.exp(-sigma * dists)                                                                               # [N_rays, N_samples]

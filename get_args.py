@@ -81,7 +81,7 @@ def get_args():
     parser.add_argument("--test_rand_n", type=int, default=1, 
                         help='randomly choose n rays for test')
     
-    # train
+    # 训练
     parser.add_argument("--N_rand", type=int, default=32*32*4, 
                         help='batch size (number of random rays per gradient step)')
     parser.add_argument("--using_batching", action='store_true', 
@@ -106,6 +106,12 @@ def get_args():
                         help='number of steps to train on central crops')
     parser.add_argument("--precrop_frac", type=float,
                         default=.5, help='fraction of img taken for central crops') 
+    
+    # 恢复训练参数
+    parser.add_argument("--resume", action='store_true', 
+                        help='是否从之前的检查点恢复训练')
+    parser.add_argument("--resume_dir", type=str, default=None, 
+                        help='指定恢复训练的检查点目录，默认使用save_dir')
     
     # saving options
     parser.add_argument("--save_step", type=int, default=1000, 

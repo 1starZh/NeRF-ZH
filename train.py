@@ -82,11 +82,10 @@ def train():
             [0, 0, 1]
         ])
         
+    # 恢复正确的render_poses设置
     if args.test:
         render_poses = np.array(poses[i_test])
-        render_poses = torch.Tensor(render_poses).to(device)
-    else:
-        render_poses = None
+    render_poses = torch.Tensor(render_poses).to(device)
         
     # 创建保存路径
     basedir = args.result_dir
@@ -108,23 +107,62 @@ def train():
     coarse_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
     vars_to_train = list(coarse_nerf.parameters())
-    if args.coarse_net_use_checkpoint:
-        logging.info(f'Load coarse net checkpoint ({args.coarse_net_checkpoint}).')
-        coarse_nerf_params = torch.load(args.coarse_net_checkpoint, map_location=device)
-        coarse_nerf.load_state_dict(coarse_nerf_params)
+    # if args.coarse_net_use_checkpoint:
+    #     logging.info(f'Load coarse net checkpoint ({args.coarse_net_checkpoint}).')
+    #     coarse_nerf_params = torch.load(args.coarse_net_checkpoint, map_location=device)
+    #     coarse_nerf.load_state_dict(coarse_nerf_params)
         
     fine_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
     vars_to_train += list(fine_nerf.parameters())
-    if args.fine_net_use_checkpoint:
-        logging.info(f'Load fine net checkpoint ({args.fine_net_checkpoint}).')
-        fine_nerf_params = torch.load(args.fine_net_checkpoint, map_location=device)
-        fine_nerf.load_state_dict(fine_nerf_params)
+    # if args.fine_net_use_checkpoint:
+    #     logging.info(f'Load fine net checkpoint ({args.fine_net_checkpoint}).')
+    #     fine_nerf_params = torch.load(args.fine_net_checkpoint, map_location=device)
+    #     fine_nerf.load_state_dict(fine_nerf_params)
     
     # 定义优化器AdamW
     betas = ast.literal_eval(args.betas)
     optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=betas)
     
+    # 检查是否需要恢复训练
+    start_iter = args.begin_iter
+    if args.resume:
+        # 确定检查点目录
+        resume_dir = args.resume_dir if args.resume_dir is not None else args.save_dir
+        
+        # 获取目录中的所有迭代子目录
+        if os.path.exists(resume_dir):
+            checkpoint_dirs = [d for d in os.listdir(resume_dir) if os.path.isdir(os.path.join(resume_dir, d)) and d.startswith('iter_')]
+            
+            if not checkpoint_dirs:
+                logging.warning(f'No checkpoint directories found in {resume_dir}, starting from scratch')
+            else:
+                # 按迭代次数排序，获取最新的检查点
+                checkpoint_dirs.sort(key=lambda x: int(x.split('_')[1]))
+                latest_checkpoint_dir = os.path.join(resume_dir, checkpoint_dirs[-1])
+                
+                logging.info(f'Resuming training from checkpoint directory: {latest_checkpoint_dir}')
+                
+                # 加载模型参数
+                coarse_nerf.load_state_dict(torch.load(os.path.join(latest_checkpoint_dir, 'coarse_nerf.pt'), map_location=device))
+                fine_nerf.load_state_dict(torch.load(os.path.join(latest_checkpoint_dir, 'fine_nerf.pt'), map_location=device))
+                
+                # 尝试加载优化器状态（如果存在）
+                optimizer_path = os.path.join(latest_checkpoint_dir, 'optimizer.pt')
+                if os.path.exists(optimizer_path):
+                    optimizer.load_state_dict(torch.load(optimizer_path, map_location=device))
+                    logging.info('Loaded optimizer state')
+                else:
+                    logging.warning('No optimizer state found, starting with fresh optimizer')
+                
+                # 解析迭代次数
+                latest_iteration = int(latest_checkpoint_dir.split('_')[-1])
+                start_iter = latest_iteration + 1
+                
+                logging.info(f'Resumed at iteration {start_iter}')
+        else:
+            logging.warning(f'Checkpoint directory {resume_dir} does not exist, starting from scratch')
+            
     if args.render_video:
         save_dir_video = os.path.join(args.save_dir_test, "render_only")
         render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
@@ -158,7 +196,7 @@ def train():
     poses = torch.Tensor(poses).to(device)
     if using_batching:
         rays_rgb = torch.Tensor(rays_rgb).to(device)
-    for i in trange(args.begin_iter, args.N_iter):
+    for i in trange(start_iter, args.N_iter):
         time0 = time.time()
         if using_batching:
             batch = rays_rgb[i_batch:i_batch+N_rand] # [B, 2+1, 3*?]
@@ -267,7 +305,7 @@ def train():
             writer.add_scalar("PSNR/train", train_psnr, i + 1)
             
         if (i + 1) % args.save_step == 0:
-            save_model_parameters(save_base_dir=args.save_dir, coarse_nerf=coarse_nerf, fine_nerf=fine_nerf, iteration=i+1)
+            save_model_parameters(save_base_dir=args.save_dir, coarse_nerf=coarse_nerf, fine_nerf=fine_nerf, iteration=i+1, optimizer=optimizer)
 
         if (i + 1) % args.i_video == 0:
             save_dir_video = os.path.join(args.save_dir_test, f"video_{i}_epoch")

@@ -33,6 +33,7 @@ betas = (0.9, 0.999)
 precrop_iters = 50000
 precrop_frac = 0.5
 using_batching = true
+test = true
 
 # 保存和渲染参数
 save_step = 10000

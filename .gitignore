@@ -1,3 +1,6 @@
 data
 log
 render
+checkpoints*
+result
+render_result
