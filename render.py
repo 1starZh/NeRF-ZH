@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from tools import get_rays, uniform_sample_rays, integrate, importance_sample_rays
 import imageio
+from tqdm import tqdm
 
 to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
@@ -21,7 +22,7 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
     rgbs = []
     # 不进行梯度计算
     with torch.no_grad():
-        for i, c2w in enumerate(render_poses):
+        for i, c2w in enumerate(tqdm(render_poses, desc="render video")):
             rays_o, rays_d = get_rays(H, W, K, c2w)
             rays_o = torch.reshape(rays_o, [-1,3]).float()
             rays_d = torch.reshape(rays_d, [-1,3]).float()

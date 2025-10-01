@@ -38,6 +38,6 @@ resume = true
 # 保存和渲染参数
 save_step = 10000
 save_dir = ./checkpoints_fern
-render_factor = 0
+render_factor = 1
 i_video = 50000
 save_dir_test = ./render_result

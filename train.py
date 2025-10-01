@@ -123,43 +123,35 @@ def train():
     # 定义优化器AdamW
     betas = ast.literal_eval(args.betas)
     optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=betas)
-    
-    # 检查是否需要恢复训练
+
     start_iter = args.begin_iter
-    if args.resume:
-        # 确定检查点目录
+    load_model = args.resume or args.render_video
+    
+    if load_model:
         resume_dir = args.resume_dir if args.resume_dir is not None else args.save_dir
-        
-        # 获取目录中的所有迭代子目录
         if os.path.exists(resume_dir):
             checkpoint_dirs = [d for d in os.listdir(resume_dir) if os.path.isdir(os.path.join(resume_dir, d)) and d.startswith('iter_')]
-            
             if not checkpoint_dirs:
                 logging.warning(f'No checkpoint directories found in {resume_dir}, starting from scratch')
             else:
-                # 按迭代次数排序，获取最新的检查点
                 checkpoint_dirs.sort(key=lambda x: int(x.split('_')[1]))
                 latest_checkpoint_dir = os.path.join(resume_dir, checkpoint_dirs[-1])
                 
-                logging.info(f'Resuming training from checkpoint directory: {latest_checkpoint_dir}')
-                
-                # 加载模型参数
+                logging.info(f'Loading model from checkpoint directory: {latest_checkpoint_dir}')
+
                 coarse_nerf.load_state_dict(torch.load(os.path.join(latest_checkpoint_dir, 'coarse_nerf.pt'), map_location=device))
                 fine_nerf.load_state_dict(torch.load(os.path.join(latest_checkpoint_dir, 'fine_nerf.pt'), map_location=device))
-                
-                # 尝试加载优化器状态（如果存在）
+
                 optimizer_path = os.path.join(latest_checkpoint_dir, 'optimizer.pt')
-                if os.path.exists(optimizer_path):
+                if os.path.exists(optimizer_path) and args.resume:
                     optimizer.load_state_dict(torch.load(optimizer_path, map_location=device))
                     logging.info('Loaded optimizer state')
-                else:
-                    logging.warning('No optimizer state found, starting with fresh optimizer')
-                
-                # 解析迭代次数
+
                 latest_iteration = int(latest_checkpoint_dir.split('_')[-1])
-                start_iter = latest_iteration + 1
+                if args.resume:
+                    start_iter = latest_iteration + 1
                 
-                logging.info(f'Resumed at iteration {start_iter}')
+                logging.info(f'Loaded model parameters from iteration {latest_iteration}')
         else:
             logging.warning(f'Checkpoint directory {resume_dir} does not exist, starting from scratch')
             
@@ -227,7 +219,7 @@ def train():
                             torch.linspace(W//2 - dW, W//2 + dW - 1, 2*dW)
                         ), -1)
                     if i == 0:
-                        print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {args.precrop_iters}")                
+                        print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {args.precrop_iters}")
                 else:
                     coords = torch.stack(torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W)), -1)  # (H, W, 2)
 
