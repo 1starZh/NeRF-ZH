@@ -53,7 +53,7 @@ class NeRF(nn.Module):
                 h = torch.cat([input_x, h], -1)
         
         sigma = self.sigma(h)
-        sigma = F.softplus(sigma)
+        sigma = F.relu(sigma)
         
         feature = self.feature(h)
         h = torch.cat([feature, input_view], -1)
@@ -61,7 +61,7 @@ class NeRF(nn.Module):
         h = self.view(h)
         h = F.relu(h)
         rgb = self.rgb(h)
-        rgb = torch.sigmoid(rgb)
+        # rgb = torch.sigmoid(rgb)
         
         # output = torch.cat([rgb, sigma], -1)
         return rgb, sigma

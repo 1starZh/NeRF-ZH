@@ -56,7 +56,7 @@ def get_args():
                         help='betas for optimizer')
     
     # 数据
-    parser.add_argument("--datadir", type=str, default='./data/llff/fern', 
+    parser.add_argument("--datadir", type=str, default='./data/fern', 
                         help='input data directory')
     parser.add_argument("--factor", type=int, default=8, 
                         help='downsample factor for LLFF images')

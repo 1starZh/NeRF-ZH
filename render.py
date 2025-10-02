@@ -37,6 +37,7 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
             rays_query_flat = rays_query.reshape(-1, 3)
             N_s = rays_query_flat.shape[0]
             view_dirs_flat = view_dirs[:,None,:].expand(rays_query.shape).reshape(-1, 3)
+            
             # coarse net
             all_rgb, all_sigma = [], []
             for it in range(0, N_s, chunk):
@@ -52,7 +53,7 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
             
             # fine net
             rays_query, imp_t_vals = importance_sample_rays(rays_o=rays_o, rays_d=rays_d, t_vals=t_vals, weights=weights, N_imp_samples=Nf_samples)  # [batch_size, N_imp_samples+N_samples, 3]
-
+            
             batch_ray_size = rays_query.shape[0]
             batch_samples_size = rays_query.shape[1]
             
@@ -76,5 +77,5 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
             
             rgbs.append(f_rgb_map)
         rgbs = np.stack(rgbs, 0)
-        imageio.mimwrite(os.path.join(save_dir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
+        imageio.mimwrite(os.path.join(save_dir, 'video.mp4'), to8b(rgbs), fps=1, quality=8)
         print("saved video")

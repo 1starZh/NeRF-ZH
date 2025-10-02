@@ -34,6 +34,7 @@ precrop_iters = 50000
 precrop_frac = 0.5
 using_batching = true
 resume = true
+test = true
 
 # 保存和渲染参数
 save_step = 10000
@@ -41,3 +42,5 @@ save_dir = ./checkpoints_fern
 render_factor = 1
 i_video = 50000
 save_dir_test = ./render_result
+
+render_video = true

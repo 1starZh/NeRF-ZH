@@ -28,7 +28,6 @@ def train():
         log_step = args.log_step
         writer = SummaryWriter(log_dir=args.log_dir)
 
-    
     # 处理数据
     K = None
     if args.dataset_type == 'llff':
@@ -81,8 +80,7 @@ def train():
             [0, focal, 0.5*H],
             [0, 0, 1]
         ])
-        
-    # 恢复正确的render_poses设置
+
     if args.test:
         render_poses = np.array(poses[i_test])
     render_poses = torch.Tensor(render_poses).to(device)
@@ -100,10 +98,9 @@ def train():
         f = os.path.join(basedir, expname, 'config.txt')
         with open(f, "w") as file:
             file.write(open(args.config, 'r').read())
-            
+             
     # 初始化模型
     logging.info('Init net.')
-    vars_to_train = []
     coarse_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
     vars_to_train = list(coarse_nerf.parameters())
@@ -122,7 +119,7 @@ def train():
     
     # 定义优化器AdamW
     betas = ast.literal_eval(args.betas)
-    optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=betas)
+    optimizer = torch.optim.Adam(params=vars_to_train, lr=args.lrate, betas=betas)
 
     start_iter = args.begin_iter
     load_model = args.resume or args.render_video
@@ -179,7 +176,7 @@ def train():
         rays_rgb = rays_rgb.astype(np.float32)
         print('shuffle rays')
         np.random.shuffle(rays_rgb)
-
+        
         print('done')
         i_batch = 0
         
@@ -188,6 +185,7 @@ def train():
     poses = torch.Tensor(poses).to(device)
     if using_batching:
         rays_rgb = torch.Tensor(rays_rgb).to(device)
+        
     for i in trange(start_iter, args.N_iter):
         time0 = time.time()
         if using_batching:
@@ -242,6 +240,7 @@ def train():
         rays_query_flat = rays_query.reshape(-1, 3)
         N_s = rays_query_flat.shape[0]
         view_dirs_flat = view_dirs[:,None,:].expand(rays_query.shape).reshape(-1, 3)
+        
         # coarse net
         all_rgb, all_sigma = [], []
         for it in range(0, N_s, args.chunk):
