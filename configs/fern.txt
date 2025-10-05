@@ -11,36 +11,12 @@ result_dir = ./result/
 expname = llff_fern
 
 datadir = ./data/fern
-factor = 8
-llffhold = 8
-
-# 模型参数
-netdepth = 8
-netwidth = 256
-multires = 10
-multires_views = 4
-skips = 4
 
 # 训练参数
-N_rand = 1024
-N_iter = 200000
-Nc_samples = 64
-Nf_samples = 128
-chunk = 65536
-lrate = 5e-4
-lr_decay = 250
-betas = (0.9, 0.999)
-precrop_iters = 50000
-precrop_frac = 0.5
 using_batching = true
-resume = true
+
 test = true
 
 # 保存和渲染参数
 save_step = 10000
 save_dir = ./checkpoints_fern
-render_factor = 1
-i_video = 50000
-save_dir_test = ./render_result
-
-render_video = true

@@ -1,20 +1,20 @@
 import os
 import torch
 import numpy as np
-from tools import get_rays, uniform_sample_rays, integrate, importance_sample_rays
+from tools import get_rays, uniform_sample_rays, integrate, importance_sample_rays, ndc_rays
 import imageio
 from tqdm import tqdm
 
 to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
 def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
-           chunk, save_dir, render_factor, Nc_samples, Nf_samples):
+           chunk, save_dir, render_factor, Nc_samples, Nf_samples, ndc):
     # 创建保存路径
     os.makedirs(os.path.join(save_dir), exist_ok=True)
     
     H, W, focal = hwf
 
-    if render_factor!=0:
+    if render_factor != 0:
         H = H//render_factor
         W = W//render_factor
         focal = focal/render_factor
@@ -24,10 +24,15 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
     with torch.no_grad():
         for i, c2w in enumerate(tqdm(render_poses, desc="render video")):
             rays_o, rays_d = get_rays(H, W, K, c2w)
-            rays_o = torch.reshape(rays_o, [-1,3]).float()
-            rays_d = torch.reshape(rays_d, [-1,3]).float()
             view_dirs = rays_d
             view_dirs = view_dirs / torch.norm(view_dirs, dim=-1, keepdim=True)
+            view_dirs = torch.reshape(view_dirs, [-1,3]).float()
+
+            if ndc:
+                rays_o, rays_d = ndc_rays(H, W, K[0][0], 1., rays_o, rays_d)
+
+            rays_o = torch.reshape(rays_o, [-1,3]).float()
+            rays_d = torch.reshape(rays_d, [-1,3]).float()
             
             rays_query, t_vals = uniform_sample_rays(rays_o=rays_o, rays_d=rays_d, near=near, far=far, N_samples=Nc_samples)    # [batch_size, N_samples, 3], [batch_size, N_samples]
             

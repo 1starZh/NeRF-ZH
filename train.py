@@ -70,6 +70,10 @@ def train():
             images = images[...,:3]*images[...,-1:] + (1.-images[...,-1:])
         else:
             images = images[...,:3]
+
+    else:
+        print("unknow datatype")
+        return
             
     H, W, focal = hwf
     H, W = int(H), int(W)
@@ -104,28 +108,20 @@ def train():
     coarse_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
     vars_to_train = list(coarse_nerf.parameters())
-    # if args.coarse_net_use_checkpoint:
-    #     logging.info(f'Load coarse net checkpoint ({args.coarse_net_checkpoint}).')
-    #     coarse_nerf_params = torch.load(args.coarse_net_checkpoint, map_location=device)
-    #     coarse_nerf.load_state_dict(coarse_nerf_params)
-        
+
     fine_nerf = NeRF(D=args.netdepth, W=args.netwidth, 
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
     vars_to_train += list(fine_nerf.parameters())
-    # if args.fine_net_use_checkpoint:
-    #     logging.info(f'Load fine net checkpoint ({args.fine_net_checkpoint}).')
-    #     fine_nerf_params = torch.load(args.fine_net_checkpoint, map_location=device)
-    #     fine_nerf.load_state_dict(fine_nerf_params)
-    
+
     # 定义优化器AdamW
     betas = ast.literal_eval(args.betas)
-    optimizer = torch.optim.Adam(params=vars_to_train, lr=args.lrate, betas=betas)
+    optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=betas)
 
     start_iter = args.begin_iter
-    load_model = args.resume or args.render_video
-    
+    load_model = args.resume
+
     if load_model:
-        resume_dir = args.resume_dir if args.resume_dir is not None else args.save_dir
+        resume_dir = args.save_dir
         if os.path.exists(resume_dir):
             checkpoint_dirs = [d for d in os.listdir(resume_dir) if os.path.isdir(os.path.join(resume_dir, d)) and d.startswith('iter_')]
             if not checkpoint_dirs:
@@ -151,11 +147,12 @@ def train():
                 logging.info(f'Loaded model parameters from iteration {latest_iteration}')
         else:
             logging.warning(f'Checkpoint directory {resume_dir} does not exist, starting from scratch')
+
             
     if args.render_video:
         save_dir_video = os.path.join(args.save_dir_test, "render_only")
         render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
-           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples)
+           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples, args.no_ndc)
         return
     
     loss_history = []
@@ -230,6 +227,11 @@ def train():
                 target_s = target[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
 
         rays_o, rays_d = batch_rays
+        ndc = not args.no_ndc
+        if ndc:
+            # for forward facing scenes
+            rays_o, rays_d = ndc_rays(H, W, K[0][0], 1., rays_o, rays_d)
+
         view_dirs = rays_d
         view_dirs = view_dirs / torch.norm(view_dirs, dim=-1, keepdim=True)
         rays_query, t_vals = uniform_sample_rays(rays_o=rays_o, rays_d=rays_d, near=near, far=far, N_samples=args.Nc_samples)    # [batch_size, N_samples, 3], [batch_size, N_samples]

@@ -110,11 +110,9 @@ def get_args():
     # 恢复训练参数
     parser.add_argument("--resume", action='store_true', 
                         help='是否从之前的检查点恢复训练')
-    parser.add_argument("--resume_dir", type=str, default=None, 
-                        help='指定恢复训练的检查点目录，默认使用save_dir')
     
     # saving options
-    parser.add_argument("--save_step", type=int, default=1000, 
+    parser.add_argument("--save_step", type=int, default=10000, 
                         help='checkpoints save step')
     parser.add_argument("--save_dir", type=str, default='./checkpoints', 
                         help='checkpoints save directory')
@@ -126,7 +124,7 @@ def get_args():
                         help='do not optimize, reload weights and render out render_poses path')
     parser.add_argument("--save_dir_test", type=str, default='./render_result', 
                         help='video save directory')
-    parser.add_argument("--render_factor", type=int, default=8, 
+    parser.add_argument("--render_factor", type=int, default=0, 
                         help='downsample factor for LLFF images')    
 
     return parser
