@@ -82,7 +82,7 @@ def get_args():
                         help='randomly choose n rays for test')
     
     # 训练
-    parser.add_argument("--N_rand", type=int, default=32*32*4, 
+    parser.add_argument("--N_rand", type=int, default=32*32, 
                         help='batch size (number of random rays per gradient step)')
     parser.add_argument("--using_batching", action='store_true', 
                         help='random images for rays')

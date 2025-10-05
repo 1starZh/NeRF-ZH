@@ -74,7 +74,9 @@ def train():
     else:
         print("unknow datatype")
         return
-            
+    
+    ndc = args.dataset_type == 'llff' and not args.no_ndc
+    
     H, W, focal = hwf
     H, W = int(H), int(W)
     hwf = [H, W, focal]
@@ -152,7 +154,7 @@ def train():
     if args.render_video:
         save_dir_video = os.path.join(args.save_dir_test, "render_only")
         render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
-           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples, args.no_ndc)
+           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples, ndc)
         return
     
     loss_history = []
@@ -227,7 +229,6 @@ def train():
                 target_s = target[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
 
         rays_o, rays_d = batch_rays
-        ndc = not args.no_ndc
         if ndc:
             # for forward facing scenes
             rays_o, rays_d = ndc_rays(H, W, K[0][0], 1., rays_o, rays_d)
@@ -303,7 +304,7 @@ def train():
         if (i + 1) % args.i_video == 0:
             save_dir_video = os.path.join(args.save_dir_test, f"video_{i}_epoch")
             render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
-           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples)
+           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples, ndc)
         
         # 调整学习率
         decay_rate = 0.1
