@@ -15,8 +15,9 @@ datadir = ./data/fern
 # 训练参数
 using_batching = true
 
-test = true
-
 # 保存和渲染参数
 save_step = 10000
 save_dir = ./checkpoints_fern
+
+# DEBUG
+test = false

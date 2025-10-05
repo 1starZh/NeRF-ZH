@@ -77,6 +77,9 @@ def train():
     
     ndc = args.dataset_type == 'llff' and not args.no_ndc
     
+    if ndc:
+        print("ndc")
+    
     H, W, focal = hwf
     H, W = int(H), int(W)
     hwf = [H, W, focal]
@@ -304,7 +307,7 @@ def train():
         if (i + 1) % args.i_video == 0:
             save_dir_video = os.path.join(args.save_dir_test, f"video_{i}_epoch")
             render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf, 
-           args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples, ndc)
+                   args.chunk, save_dir_video, args.render_factor, args.Nc_samples, args.Nf_samples, ndc)
         
         # 调整学习率
         decay_rate = 0.1

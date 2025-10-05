@@ -22,7 +22,7 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
     rgbs = []
     # 不进行梯度计算
     with torch.no_grad():
-        for i, c2w in enumerate(tqdm(render_poses, desc="render video")):
+        for i, c2w in enumerate(tqdm(render_poses[:3,:4], desc="render video")):
             rays_o, rays_d = get_rays(H, W, K, c2w)
             view_dirs = rays_d
             view_dirs = view_dirs / torch.norm(view_dirs, dim=-1, keepdim=True)
@@ -82,5 +82,5 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
             
             rgbs.append(f_rgb_map)
         rgbs = np.stack(rgbs, 0)
-        imageio.mimwrite(os.path.join(save_dir, 'video.mp4'), to8b(rgbs), fps=1, quality=8)
+        imageio.mimwrite(os.path.join(save_dir, 'video.mp4'), to8b(rgbs), fps=3, quality=8)
         print("saved video")

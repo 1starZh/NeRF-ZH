@@ -96,7 +96,7 @@ def get_args():
                         help='number of coarse samples per ray')
     parser.add_argument("--Nf_samples", type=int, default=128,
                         help='number of additional fine samples per ray')
-    parser.add_argument("--chunk", type=int, default=1024*64, 
+    parser.add_argument("--chunk", type=int, default=1024*32, 
                         help='number of pts sent through network in parallel, decrease if running out of memory')
     parser.add_argument("--lrate", type=float, default=5e-4, 
                         help='learning rate')
