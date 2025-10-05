@@ -82,5 +82,5 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
             
             rgbs.append(f_rgb_map)
         rgbs = np.stack(rgbs, 0)
-        imageio.mimwrite(os.path.join(save_dir, 'video.mp4'), to8b(rgbs), fps=3, quality=8)
+        imageio.mimwrite(os.path.join(save_dir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
         print("saved video")
