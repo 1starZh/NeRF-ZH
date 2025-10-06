@@ -43,14 +43,6 @@ def get_args():
                         help='log2 of max freq for positional encoding (2D direction)')
     parser.add_argument("--skips", nargs='+', type=int, default=[4], 
                         help='layers concat position encoder results in network')
-    parser.add_argument("--coarse_net_use_checkpoint", type=str2bool, default=False, 
-                        help='coarse network checkpoint file')
-    parser.add_argument("--coarse_net_checkpoint", type=str, required=False,  
-                        help='coarse network checkpoint file')
-    parser.add_argument("--fine_net_use_checkpoint", type=str2bool, default=False, 
-                        help='fine network checkpoint file')
-    parser.add_argument("--fine_net_checkpoint", type=str, required=False,  
-                        help='fine network checkpoint file')
 
     parser.add_argument("--betas", type=str, default='(0.9, 0.999)', 
                         help='betas for optimizer')

@@ -120,10 +120,10 @@ def train():
 
     # 定义优化器AdamW
     betas = ast.literal_eval(args.betas)
-    optimizer = torch.optim.Adam(params=vars_to_train, lr=args.lrate, betas=betas)
+    optimizer = torch.optim.AdamW(params=vars_to_train, lr=args.lrate, betas=betas)
 
     start_iter = args.begin_iter
-    load_model = args.resume
+    load_model = args.resume or args.render_video
 
     if load_model:
         resume_dir = args.save_dir

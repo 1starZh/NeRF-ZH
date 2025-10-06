@@ -21,3 +21,4 @@ save_dir = ./checkpoints_fern
 
 # DEBUG
 test = false
+resume = false
