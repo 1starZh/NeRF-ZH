@@ -22,8 +22,8 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
     rgbs = []
     # 不进行梯度计算
     with torch.no_grad():
-        for i, c2w in enumerate(tqdm(render_poses[:3,:4], desc="render video")):
-            rays_o, rays_d = get_rays(H, W, K, c2w)
+        for i, c2w in enumerate(tqdm(render_poses, desc="render video")):
+            rays_o, rays_d = get_rays(H, W, K, c2w[:3,:4])
             view_dirs = rays_d
             view_dirs = view_dirs / torch.norm(view_dirs, dim=-1, keepdim=True)
             view_dirs = torch.reshape(view_dirs, [-1,3]).float()
@@ -54,7 +54,7 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
                 all_sigma.append(sigma)
             c_rgb = torch.cat(all_rgb, 0).reshape(batch_ray_size, batch_samples_size, 3)
             c_sigma = torch.cat(all_sigma, 0).reshape(batch_ray_size, batch_samples_size)
-            _, weights = integrate(c_rgb, c_sigma, rays_d, t_vals, 0)
+            _, weights = integrate(c_rgb, c_sigma, rays_d, t_vals)
             
             # fine net
             rays_query, imp_t_vals = importance_sample_rays(rays_o=rays_o, rays_d=rays_d, t_vals=t_vals, weights=weights, N_imp_samples=Nf_samples)  # [batch_size, N_imp_samples+N_samples, 3]
@@ -76,7 +76,7 @@ def render(render_poses, hwf, K, near, far, coarse_nerf, fine_nerf,
                 all_sigma.append(sigma)
             f_rgb = torch.cat(all_rgb, 0).reshape(batch_ray_size, batch_samples_size, 3)
             f_sigma = torch.cat(all_sigma, 0).reshape(batch_ray_size, batch_samples_size)
-            f_rgb_map, _ = integrate(f_rgb, f_sigma, rays_d, imp_t_vals, 0)
+            f_rgb_map, _ = integrate(f_rgb, f_sigma, rays_d, imp_t_vals)
             
             f_rgb_map = f_rgb_map.reshape(H, W, 3).cpu().numpy()
             

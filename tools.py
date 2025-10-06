@@ -110,7 +110,7 @@ def save_model_parameters(save_base_dir, coarse_nerf, fine_nerf, iteration, opti
     else:
         logging.info(f"Saved model parameters at iteration {iteration}.")
     
-def integrate(rgb, sigma, rays_d, t_vals, raw_noise_std=1e0, pytest=False):
+def integrate(rgb, sigma, rays_d, t_vals):
     """integrate rgb, alpha, rays_d and t_vals to rgb_map
 
     Args:
@@ -127,14 +127,14 @@ def integrate(rgb, sigma, rays_d, t_vals, raw_noise_std=1e0, pytest=False):
     dists = t_vals[...,1:] - t_vals[...,:-1]                                                                            # [N_rays, N_samples-1]
     dists = torch.cat([dists, torch.tensor([1e10], device=device).expand(dists[...,:1].shape)], -1)                     # [N_rays, N_samples]
     dists = dists * torch.norm(rays_d[...,None,:], dim=-1)                                                              # [N_rays, N_samples] = [N_rays, N_samples] * [N_rays, 1]
-    noise = 0.
-    if raw_noise_std > 0.:
-        noise = torch.randn(sigma.shape) * raw_noise_std
-        if pytest:
-            np.random.seed(0)
-            noise = np.random.rand(*list(sigma.shape)) * raw_noise_std
-            noise = torch.Tensor(noise)
-    sigma = torch.relu(sigma+noise)
+    # noise = 0.
+    # if raw_noise_std > 0.:
+    #     noise = torch.randn(sigma.shape) * raw_noise_std
+    #     if pytest:
+    #         np.random.seed(0)
+    #         noise = np.random.rand(*list(sigma.shape)) * raw_noise_std
+    #         noise = torch.Tensor(noise)
+    # sigma = torch.relu(sigma+noise)
     alpha = 1 - torch.exp(-sigma * dists)                                                                               # [N_rays, N_samples]
     T = torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1)).to(device), 1.-alpha + 1e-10], -1), -1)[:, :-1]        # [N_rays, N_samples]
     weights = alpha * T                                                                                                 # [N_rays, N_samples]
