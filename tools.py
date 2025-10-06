@@ -134,7 +134,8 @@ def integrate(rgb, sigma, rays_d, t_vals, raw_noise_std=1e0, pytest=False):
             np.random.seed(0)
             noise = np.random.rand(*list(sigma.shape)) * raw_noise_std
             noise = torch.Tensor(noise)
-    alpha = 1 - torch.exp(-(sigma+noise) * dists)                                                                               # [N_rays, N_samples]
+    sigma = torch.relu(sigma+noise)
+    alpha = 1 - torch.exp(-sigma * dists)                                                                               # [N_rays, N_samples]
     T = torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1)).to(device), 1.-alpha + 1e-10], -1), -1)[:, :-1]        # [N_rays, N_samples]
     weights = alpha * T                                                                                                 # [N_rays, N_samples]
     rgb_map = torch.sum(rgb * weights[...,None], dim=1)                                                                 # [N_rays, N_samples, 3] -> [N_rays, 3]
