@@ -1,7 +1,6 @@
 data
 log
-render
+render_result
 checkpoints*
 result
-result*
 __pycache__*
