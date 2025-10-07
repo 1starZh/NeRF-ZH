@@ -118,7 +118,7 @@ def train():
                        in_L=args.multires, in_v_L=args.multires_views, skips=args.skips).to(device)
     vars_to_train += list(fine_nerf.parameters())
 
-    # 定义优化器AdamW
+    # 定义优化器Adam
     betas = ast.literal_eval(args.betas)
     optimizer = torch.optim.Adam(params=vars_to_train, lr=args.lrate, betas=betas)
 
@@ -232,12 +232,11 @@ def train():
                 target_s = target[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
 
         rays_o, rays_d = batch_rays
-        if ndc:
-            # for forward facing scenes
-            rays_o, rays_d = ndc_rays(H, W, K[0][0], 1., rays_o, rays_d)
-
         view_dirs = rays_d
         view_dirs = view_dirs / torch.norm(view_dirs, dim=-1, keepdim=True)
+        if ndc:
+            rays_o, rays_d = ndc_rays(H, W, K[0][0], 1., rays_o, rays_d)
+            
         rays_query, t_vals = uniform_sample_rays(rays_o=rays_o, rays_d=rays_d, near=near, far=far, N_samples=args.Nc_samples)    # [batch_size, N_samples, 3], [batch_size, N_samples]
         
         batch_ray_size = rays_query.shape[0]
