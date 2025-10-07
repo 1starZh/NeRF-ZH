@@ -7,9 +7,7 @@
 ## 效果展示
 
 ### 训练100000iterations (200000iterations效果更佳，但是autodl租卡太贵了，就展示这些吧)
-<video src="./pictures/100000.mp4" controls width="640">
-  你的浏览器不支持 video 标签。
-</video>
+![show](./pictures/100000.gif)
 
 ## 结构
 
